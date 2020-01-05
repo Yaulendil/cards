@@ -66,7 +66,12 @@ class Card(Hashable):
             return NotImplemented
 
     def __repr__(self) -> str:
-        return f"{VALUES[self.value][:2]}{self.suit!s}"
+        name: str = VALUES[self.value]
+
+        if not name.isdigit():
+            name = name[0]
+
+        return f"{name}{self.suit!s}"
 
     def __str__(self) -> str:
         return f"{VALUES[self.value]} of {self.suit.name.title()}"
