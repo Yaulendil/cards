@@ -1,13 +1,14 @@
 from enum import IntEnum
-from typing import List, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
-from ..deck import Card, Suit
+from ..deck import Card, Suit, VALUES
 from .base import Hand
 
 __all__ = ("evaluate",)
 
 
 _value = lambda card: card.value
+_vsp = lambda card: (card.value, card.suit.value)
 
 
 class Target(IntEnum):
@@ -24,11 +25,35 @@ class Target(IntEnum):
 
 
 def evaluate(hand: Hand) -> Tuple[Target, Set[Card]]:
+    full = hand.full
     possible: List[Tuple[Target, Set[Card]]] = []
 
-    oak2: List[Set[Card]] = []
-    oak3: List[Set[Card]] = []
-    oak4: List[Set[Card]] = []
-    oak5: List[Set[Card]] = []
+    # Flushes: Subsets of the Hand which all have the same Suit, keyed by Suit.
+    flushes: Dict[Suit, Set[Card]] = {}
 
-    return min(possible, key=lambda o: o[0].value)
+    # OAK: Of A Kind: Subsets of the Hand which all have the same Value, keyed
+    #   by Number of a Kind.
+    oak: Dict[int, List[Set[Card]]] = {
+        2: [],
+        3: [],
+        4: [],
+        5: [],
+    }
+
+    for v in range(len(VALUES)):
+        sub = {card for card in full if card.value == v}
+        l = len(sub)
+
+        if l in oak:
+            oak[l].append(sub)
+
+    for suit in Suit:
+        sub = {card for card in full if card.suit == suit}
+
+        if len(sub) >= 5:
+            flushes[suit] = sub
+
+    if possible:
+        return min(possible, key=lambda p: p[0].value)
+    else:
+        return Target.HIGH, {max(full, key=_vsp)}
