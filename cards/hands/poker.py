@@ -7,26 +7,38 @@ from .base import Hand
 __all__ = ("evaluate",)
 
 
-_value = lambda card: card.value
-_vsp = lambda card: (card.value, card.suit.value)
-
-
 class Target(IntEnum):
-    FIVE_OF_KIND = 0
-    STRAIGHT_FLUSH = 1
-    FOUR_OF_KIND = 2
-    FULL_HOUSE = 3
-    FLUSH = 4
-    STRAIGHT = 5
-    THREE_OF_KIND = 6
-    PAIR_TWO = 7
-    PAIR_ONE = 8
-    HIGH = 9
+    FIVE_OF_KIND = 9
+    STRAIGHT_FLUSH = 8
+    FOUR_OF_KIND = 7
+    FULL_HOUSE = 6
+    FLUSH = 5
+    STRAIGHT = 4
+    THREE_OF_KIND = 3
+    PAIR_TWO = 2
+    PAIR_ONE = 1
+    HIGH = 0
+
+
+def best_card(card: Card) -> Tuple[int, int]:
+    return card.value, card.suit.value
+
+
+def best_hand(pair: Tuple[Target, Set[Card]]) -> Tuple[int, int, int]:
+    """Sort Key: Sort pairs of Target and Hand by best Target. On ties between
+        Targets, prefer highest Value. On ties between Values, prefer "best"
+        Suit.
+    """
+    targ, cards = pair
+    best = max(cards, key=best_card)
+    return targ.value, best.value, best.suit.value
 
 
 def evaluate(hand: Hand) -> Tuple[Target, Set[Card]]:
     full = hand.full
-    possible: List[Tuple[Target, Set[Card]]] = []
+    possible: List[Tuple[Target, Set[Card]]] = [
+        (Target.HIGH, {max(full, key=best_card)}),
+    ]
 
     # Flushes: Subsets of the Hand which all have the same Suit, keyed by Suit.
     flushes: Dict[Suit, Set[Card]] = {}
@@ -53,7 +65,4 @@ def evaluate(hand: Hand) -> Tuple[Target, Set[Card]]:
         if len(sub) >= 5:
             flushes[suit] = sub
 
-    if possible:
-        return min(possible, key=lambda p: p[0].value)
-    else:
-        return Target.HIGH, {max(full, key=_vsp)}
+    return max(possible, key=best_hand)
