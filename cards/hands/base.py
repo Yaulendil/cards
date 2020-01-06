@@ -21,32 +21,32 @@ class Hand(Hashable):
         self.pile_discard: Deck = discard
         self.pile_draw: Deck = draw
 
-    def discard(self, *cards: Card, pile: Deck = None) -> None:
-        dst = pile or self.pile_discard
+    def discard(self, *cards: Card, pile: Deck = None, bottom: bool = False) -> None:
+        dst: Deck = pile or self.pile_discard
         if not dst:
             raise ValueError("Nowhere to discard to.")
 
         for card in cards:
             if card in self.cards:
                 self.cards.remove(card)
-                dst.add(card)
+                dst.add(card, bottom=bottom)
             else:
                 raise CardNotInHand(card)
 
-    def draw(self, n: int, *, pile: Deck = None) -> None:
-        src = pile or self.pile_draw
+    def draw(self, n: int, *, pile: Deck = None, bottom: bool = False) -> None:
+        src: Deck = pile or self.pile_draw
         if not src:
             raise ValueError("Nowhere to draw cards from.")
 
         for _ in range(n):
-            self.cards.append(src.draw())
+            self.cards.append(src.draw(bottom=bottom))
 
-    def dump(self, pile: Deck = None) -> None:
-        dst = pile or self.pile_discard
+    def dump(self, pile: Deck = None, *, bottom: bool = False) -> None:
+        dst: Deck = pile or self.pile_discard
         if not dst:
             raise ValueError("Nowhere to discard to.")
 
-        self.discard(*self.cards, pile=pile)
+        self.discard(*self.cards, pile=pile, bottom=bottom)
 
     @property
     def full(self) -> Set[Card]:

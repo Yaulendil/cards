@@ -33,18 +33,8 @@ OAKS = {
 }
 
 
-def best_card(card: Card) -> Tuple[int, int]:
-    return card.value, card.suit.value
-
-
-def best_hand(pair: Tuple[Target, Set[Card]]) -> HandValue:
-    """Sort Key: Sort pairs of Target and Hand by best Target. On ties between
-        Targets, prefer highest Value. On ties between Values, prefer "best"
-        Suit.
-    """
-    targ, cards = pair
-    # noinspection PyRedundantParentheses
-    return (targ.value, *(c.value for c in sorted(cards, key=best_card)))
+def best_card(card: Card) -> int:  #Tuple[int, int]:
+    return card.value  #, card.suit.value
 
 
 class Combo(object):
@@ -102,7 +92,7 @@ def evaluate(hand: Hand) -> Combo:
 
     # Check for TwoPairs.
     if len(oak[2]) >= 2:
-        a, b = sorted(oak[2], key=lambda o: list(o)[0].value, reverse=True)[:2]
+        a, b = oak[2][-2:]
         possible.append(Combo(Target.PAIR_TWO, a | b, full))
 
     # Calculate Flushes.
