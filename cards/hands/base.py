@@ -41,6 +41,13 @@ class Hand(Hashable):
         for _ in range(n):
             self.cards.append(src.draw())
 
+    def dump(self, pile: Deck = None) -> None:
+        dst = pile or self.pile_discard
+        if not dst:
+            raise ValueError("Nowhere to discard to.")
+
+        self.discard(*self.cards, pile=pile)
+
     @property
     def full(self) -> Set[Card]:
         if self.community:
