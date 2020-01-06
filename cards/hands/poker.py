@@ -33,8 +33,15 @@ OAKS = {
 }
 
 
-def best_card(card: Card) -> int:  #Tuple[int, int]:
-    return card.value  #, card.suit.value
+STRAIGHTS: Tuple[Set[int]] = tuple({i, i + 1, i + 2, i + 3, i + 4} for i in range(9))
+
+
+def card_value(card: Card) -> int:
+    return card.value
+
+
+def best(cards: Set[Card], n: int = 5) -> Set[Card]:
+    return set(sorted(list(cards), key=card_value)[-n:])
 
 
 class Combo(object):
@@ -48,8 +55,8 @@ class Combo(object):
     def value(self) -> HandValue:
         return (
             self.target.value,
-            *(c.value for c in sorted(self.cards, key=best_card, reverse=True)),
-            *(c.value for c in sorted(self.hand, key=best_card, reverse=True)),
+            *(c.value for c in sorted(self.cards, key=card_value, reverse=True)),
+            *(c.value for c in sorted(self.hand, key=card_value, reverse=True)),
         )
 
     def __str__(self) -> str:
@@ -61,7 +68,7 @@ class Combo(object):
 def evaluate(hand: Hand) -> Combo:
     full = hand.full
     possible: List[Combo] = [
-        Combo(Target.HIGH, {max(full, key=best_card)}, full),
+        Combo(Target.HIGH, {max(full, key=card_value)}, full),
     ]
 
     # Flushes: Subsets of the Hand which all have the same Suit, keyed by Suit.
@@ -75,6 +82,9 @@ def evaluate(hand: Hand) -> Combo:
         4: [],
         5: [],
     }
+
+    straights: List[Set[Card]] = []
+    values: Set[int] = {card.value for card in full}
 
     # Calculate NoaKs.
     for v in range(len(VALUES)):
@@ -95,12 +105,34 @@ def evaluate(hand: Hand) -> Combo:
         a, b = oak[2][-2:]
         possible.append(Combo(Target.PAIR_TWO, a | b, full))
 
+    for seq in STRAIGHTS:
+        if seq <= values:
+            # This Straight is a subset of our Hand.
+            straight = {card for card in full if card.value in seq}
+            straights.append(straight)
+            possible.append(
+                Combo(
+                    Target.STRAIGHT,
+                    {[card for card in full if card.value == i][0] for i in seq},
+                    full,
+                )
+            )
+
     # Calculate Flushes.
     for suit in Suit:
         sub = {card for card in full if card.suit == suit}
 
         if len(sub) >= 5:
             flushes[suit] = sub
-            possible.append(Combo(Target.FLUSH, sub, full))
+            possible.append(Combo(Target.FLUSH, best(sub, 5), full))
+            strflush = None
+
+            for straight in straights:
+                isect = straight & sub
+                if len(isect) >= 5:
+                    strflush = isect
+
+            if strflush:
+                possible.append(Combo(Target.STRAIGHT_FLUSH, best(strflush, 5), full))
 
     return max(possible, key=Combo.value)
