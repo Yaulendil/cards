@@ -60,8 +60,12 @@ class Combo(object):
         )
 
     def __str__(self) -> str:
-        return "{}: {}\nValue: {!r}".format(
-            self.target.name, ", ".join(map(str, list(self.cards))), self.value()
+        return "{}: {}".format(
+            self.target.name,
+            ", ".join(
+                map(repr, sorted(list(self.cards), key=card_value, reverse=True))
+            ),
+            self.value(),
         )
 
 

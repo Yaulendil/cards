@@ -73,4 +73,4 @@ class Hand(Hashable):
         return len(self.cards)
 
     def __str__(self) -> str:
-        return "Hand of " + ", ".join(map(repr, self)) if self.cards else "Empty Hand"
+        return ", ".join(map(repr, self)) if self.cards else "Empty Hand"
