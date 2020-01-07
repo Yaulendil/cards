@@ -83,7 +83,7 @@ class Card(Hashable):
         if not name.isdigit():
             name = name[0]
 
-        return f"{name}{self.suit!s}"
+        return f"{name:>2}{self.suit!s}"
 
     def __str__(self) -> str:
         return f"{VALUES[self.rank]} of {self.suit.name.title()}"

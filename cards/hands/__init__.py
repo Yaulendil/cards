@@ -62,11 +62,11 @@ class Combo(object):
         self.hand: FrozenSet[Card] = frozenset(hand)
 
         self.target: Target = target
-        self.main: Tuple[int, ...] = tuple(
-            sorted((c.rank for c in self.cards), reverse=True)
+        self.main: Tuple[Card, ...] = tuple(
+            sorted((c for c in self.cards), reverse=True)
         )
-        self.kicker: Tuple[int, ...] = tuple(
-            sorted((c.rank for c in self.hand - self.cards), reverse=True)[
+        self.kicker: Tuple[Card, ...] = tuple(
+            sorted((c for c in self.hand - self.cards), reverse=True)[
                 : 5 - len(self.main)
             ]
         )
@@ -94,22 +94,24 @@ class Combo(object):
         else:
             return NotImplemented
 
-    def __str__(self) -> str:
-        return "{}: {}".format(
-            self.term,
-            ", ".join(map(repr, sorted(self.cards, reverse=True))),
-            self.rank,
+    def __repr__(self) -> str:
+        return "{}: {}".format(self.term, ", ".join(map(repr, self.main))) + (
+            " (+{})".format(", ".join(map(repr, self.kicker))) if self.kicker else ""
         )
+
+    def __str__(self) -> str:
+        return "{}: {}".format(self.term, ", ".join(map(repr, self.main)))
 
 
 def evaluate(hand: Set[Card]) -> Iterator[Combo]:
+    if not hand:
+        return
+
+    # Always yield at least a High Card.
     yield Combo(Target.HIGH, {max(hand)}, hand)
 
-    # Flushes: Subsets of the Hand which all have the same Suit, keyed by Suit.
-    flushes: Dict[Suit, Set[Card]] = {}
-
-    # OAK: Of A Kind: Subsets of the Hand which all have the same Value, keyed
-    #   by Number of a Kind.
+    # OAK: Of A Kind: Subsets of the Hand which all have the same Rank, keyed by
+    #   Number of a Kind.
     oak: Dict[int, List[Set[Card]]] = {
         2: [],
         3: [],
@@ -172,7 +174,6 @@ def evaluate(hand: Set[Card]) -> Iterator[Combo]:
         sub = {card for card in hand if card.suit == suit}
 
         if len(sub) >= 5:
-            flushes[suit] = sub
             yield Combo(Target.FLUSH, best(sub, 5), hand)
 
             for straight in straights[::-1]:
