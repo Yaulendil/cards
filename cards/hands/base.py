@@ -48,6 +48,9 @@ class Hand(Hashable):
 
         self.discard(*self.cards, pile=pile, bottom=bottom)
 
+    def sort(self, reverse: bool = False) -> None:
+        self.cards = sorted(self.cards, reverse=reverse)
+
     @property
     def full(self) -> Set[Card]:
         if self.community:

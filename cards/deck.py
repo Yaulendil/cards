@@ -65,6 +65,18 @@ class Card(Hashable):
         else:
             return NotImplemented
 
+    def __gt__(self, other: "Card") -> bool:
+        if isinstance(other, Card):
+            return self.value > other.value
+        else:
+            return NotImplemented
+
+    def __lt__(self, other: "Card") -> bool:
+        if isinstance(other, Card):
+            return self.value < other.value
+        else:
+            return NotImplemented
+
     def __repr__(self) -> str:
         name: str = VALUES[self.value]
 

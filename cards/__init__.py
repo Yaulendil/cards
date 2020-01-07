@@ -20,9 +20,11 @@ def test(nc: int = 5, nh: int = 2):
     com.draw(nc)
     h0.draw(nh)
     h1.draw(nh)
+    h0.sort(True)
+    h1.sort(True)
 
-    c0 = poker.evaluate(h0)
-    c1 = poker.evaluate(h1)
+    c0 = poker.evaluate_best(h0)
+    c1 = poker.evaluate_best(h1)
     v0 = c0.value()
     v1 = c1.value()
 
