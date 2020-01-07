@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Dict, List, Set, Tuple, Iterator
+from typing import Dict, List, Set, Tuple, Iterator, FrozenSet
 
 from ..deck import Card, Suit, VALUES
 from .base import Hand
@@ -25,7 +25,7 @@ class Target(IntEnum):
     FIVE_OF_KIND = 9
 
 
-TARGET_NAMES = [
+TARGET_NAMES = (
     "High Card",
     "One Pair",
     "Two Pairs",
@@ -36,7 +36,7 @@ TARGET_NAMES = [
     "Four of a Kind",
     "Straight Flush",
     "Five of a Kind",
-]
+)
 
 
 OAKS = {
@@ -47,7 +47,7 @@ OAKS = {
 }
 
 
-STRAIGHTS: Tuple[Set[int]] = tuple({i, i + 1, i + 2, i + 3, i + 4} for i in range(9))
+STRAIGHTS: Tuple[Set[int], ...] = tuple(map(set, (range(i, i + 5) for i in range(9))))
 
 
 def card_value(card: Card) -> int:
@@ -59,15 +59,17 @@ def best(cards: Set[Card], n: int = 5) -> Set[Card]:
 
 
 class Combo(object):
-    __slots__ = ("cards", "hand", "target")
+    __slots__ = ("cards", "hand", "target", "term", "value")
 
     def __init__(self, target: Target, cards: Set[Card], hand: Set[Card]):
-        self.cards: Set[Card] = cards
-        self.hand: Set[Card] = hand
+        self.cards: FrozenSet[Card] = frozenset(cards)
+        self.hand: FrozenSet[Card] = frozenset(hand)
         self.target: Target = target
 
-    def value(self) -> HandValue:
-        return (
+        self.term: str = "Royal Flush" if (
+            self.target is Target.STRAIGHT_FLUSH and max(self.cards) == len(VALUES)
+        ) else TARGET_NAMES[self.target]
+        self.value: HandValue = (
             self.target.value,
             *(c.value for c in sorted(self.cards, reverse=True)),
             *(c.value for c in sorted(self.hand, reverse=True)),
@@ -75,21 +77,21 @@ class Combo(object):
 
     def __gt__(self, other: "Combo") -> bool:
         if isinstance(other, Combo):
-            return self.value() > other.value()
+            return self.value > other.value
         else:
             return NotImplemented
 
     def __lt__(self, other: "Combo") -> bool:
         if isinstance(other, Combo):
-            return self.value() < other.value()
+            return self.value < other.value
         else:
             return NotImplemented
 
     def __str__(self) -> str:
         return "{}: {}".format(
-            TARGET_NAMES[self.target],
+            self.term,
             ", ".join(map(repr, sorted(self.cards, reverse=True))),
-            self.value(),
+            self.value,
         )
 
 
