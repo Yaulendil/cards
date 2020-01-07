@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Callable, List, Optional
 
 
 class Game(ABC):
-    __slots__ = ("components", "players", "turn")
+    __slots__ = ("players", "turn")
 
-    def __init__(self, components, players: List["Player"]):
-        self.components: dict = components
+    def __init__(self, players: List["Player"]):
         self.players: List["Player"] = players
         self.turn: int = 0
 
@@ -25,6 +24,18 @@ class Game(ABC):
         self.turn_end()
         self.turn += 1
 
+    def loop_basic(
+        self, win_condition: Callable[["Game"], Optional["Player"]]
+    ) -> "Player":
+        """A simplistic "example" Game Loop. Given a "Win Condition" Function
+            which takes a Game as its only argument, run Turns of the Game until
+            the Function returns a Winner.
+        """
+        while (winner := win_condition(self)) is None:
+            self.full_turn()
+
+        return winner
+
     @abstractmethod
     def turn_begin(self):
         ...
@@ -34,15 +45,17 @@ class Game(ABC):
         ...
 
     @abstractmethod
-    def turn_post(self, player):
+    def turn_post(self, player: "Player"):
         ...
 
     @abstractmethod
-    def turn_pre(self, player):
+    def turn_pre(self, player: "Player"):
         ...
 
 
 class Player(ABC):
+    __slots__ = ()
+
     @abstractmethod
     def send(self, *a, **kw):
         ...
