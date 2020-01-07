@@ -23,7 +23,7 @@ class Hand(Hashable):
 
     def discard(self, *cards: Card, pile: Deck = None, bottom: bool = False) -> None:
         dst: Deck = pile or self.pile_discard
-        if not dst:
+        if dst is None:
             raise ValueError("Nowhere to discard to.")
 
         for card in cards:
@@ -35,7 +35,7 @@ class Hand(Hashable):
 
     def draw(self, n: int, *, pile: Deck = None, bottom: bool = False) -> None:
         src: Deck = pile or self.pile_draw
-        if not src:
+        if src is None:
             raise ValueError("Nowhere to draw cards from.")
 
         for _ in range(n):
