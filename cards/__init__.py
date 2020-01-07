@@ -1,7 +1,7 @@
 from .deck import Card, Deck, Suit
-from .hands import Hand, poker
+from .hands import Hand, evaluate_best
 
-__all__ = ("Card", "Deck", "Hand", "poker", "Suit", "test")
+__all__ = ("Card", "Deck", "Hand", "Suit", "test")
 
 
 d = Deck()
@@ -23,8 +23,8 @@ def test(nc: int = 5, nh: int = 2):
     h0.sort(True)
     h1.sort(True)
 
-    c0 = poker.evaluate_best(h0)
-    c1 = poker.evaluate_best(h1)
+    c0 = evaluate_best(h0)
+    c1 = evaluate_best(h1)
     v0 = c0.value()
     v1 = c1.value()
 
@@ -43,6 +43,6 @@ def test(nc: int = 5, nh: int = 2):
         print("Winner:", h1, "with", c1)
     print()
 
-    com.dump()
-    h0.dump()
-    h1.dump()
+    com.scrap()
+    h0.scrap()
+    h1.scrap()

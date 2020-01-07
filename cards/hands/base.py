@@ -41,11 +41,7 @@ class Hand(Hashable):
         for _ in range(n):
             self.cards.append(src.draw(bottom=bottom))
 
-    def dump(self, pile: Deck = None, *, bottom: bool = False) -> None:
-        dst: Deck = pile or self.pile_discard
-        if not dst:
-            raise ValueError("Nowhere to discard to.")
-
+    def scrap(self, pile: Deck = None, *, bottom: bool = False) -> None:
         self.discard(*self.cards, pile=pile, bottom=bottom)
 
     def sort(self, reverse: bool = False) -> None:
