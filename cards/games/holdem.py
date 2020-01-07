@@ -16,7 +16,7 @@ class PlayerHoldem(Player):
         print(*a, **kw)
 
     def take_turn(self, game: Game, turn: int):
-        input("{}: {}\n  {}".format(self, self.hand, evaluate_best(self.hand)))
+        input("{}: {}\n  {}".format(self, self.hand, evaluate_best(self.hand.full)))
 
     def __str__(self) -> str:
         return self.name
@@ -82,7 +82,7 @@ class Holdem(Game):
         self.take_bets()
 
         hands: Dict[PlayerHoldem, Combo] = {
-            p: evaluate_best(p.hand) for p in self.playing
+            p: evaluate_best(p.hand.full) for p in self.playing
         }
         best_hand: Combo = max(hands.values())
         winners = [p for p, h in hands.items() if h == best_hand]

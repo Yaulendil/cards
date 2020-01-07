@@ -9,7 +9,7 @@ __all__ = ("Combo", "evaluate", "evaluate_best", "Hand")
 
 # Tuple representing total Hand Value. The first Int is the Target Class, and
 #   all subsequent Ints are the values of the Cards in the Hand, by Value.
-HandValue = Tuple[int, ...]
+HandRank = Tuple[int, ...]
 
 
 class Target(IntEnum):
@@ -50,40 +50,47 @@ OAKS = {
 STRAIGHTS: Tuple[Set[int], ...] = tuple(map(set, (range(i, i + 5) for i in range(9))))
 
 
-def card_value(card: Card) -> int:
-    return card.value
-
-
 def best(cards: Set[Card], n: int = 5) -> Set[Card]:
     return set(sorted(list(cards))[-n:])
 
 
 class Combo(object):
-    __slots__ = ("cards", "hand", "target", "term", "value")
+    __slots__ = ("cards", "hand", "kicker", "main", "rank", "target", "term")
 
     def __init__(self, target: Target, cards: Set[Card], hand: Set[Card]):
         self.cards: FrozenSet[Card] = frozenset(cards)
         self.hand: FrozenSet[Card] = frozenset(hand)
-        self.target: Target = target
 
+        self.target: Target = target
+        self.main: Tuple[int, ...] = tuple(
+            sorted((c.rank for c in self.cards), reverse=True)
+        )
+        self.kicker: Tuple[int, ...] = tuple(
+            sorted((c.rank for c in self.hand - self.cards), reverse=True)[
+                : 5 - len(self.main)
+            ]
+        )
+
+        self.rank: HandRank = (self.target.value, *self.main, *self.kicker)
         self.term: str = "Royal Flush" if (
             self.target is Target.STRAIGHT_FLUSH and max(self.cards) == len(VALUES)
         ) else TARGET_NAMES[self.target]
-        self.value: HandValue = (
-            self.target.value,
-            *(c.value for c in sorted(self.cards, reverse=True)),
-            *(c.value for c in sorted(self.hand, reverse=True)),
-        )
+
+    def __eq__(self, other: "Combo") -> bool:
+        if isinstance(other, Combo):
+            return self.rank == other.rank
+        else:
+            return NotImplemented
 
     def __gt__(self, other: "Combo") -> bool:
         if isinstance(other, Combo):
-            return self.value > other.value
+            return self.rank > other.rank
         else:
             return NotImplemented
 
     def __lt__(self, other: "Combo") -> bool:
         if isinstance(other, Combo):
-            return self.value < other.value
+            return self.rank < other.rank
         else:
             return NotImplemented
 
@@ -91,13 +98,12 @@ class Combo(object):
         return "{}: {}".format(
             self.term,
             ", ".join(map(repr, sorted(self.cards, reverse=True))),
-            self.value,
+            self.rank,
         )
 
 
-def evaluate(hand: Hand) -> Iterator[Combo]:
-    full = hand.full
-    yield Combo(Target.HIGH, {max(full)}, full)
+def evaluate(hand: Set[Card]) -> Iterator[Combo]:
+    yield Combo(Target.HIGH, {max(hand)}, hand)
 
     # Flushes: Subsets of the Hand which all have the same Suit, keyed by Suit.
     flushes: Dict[Suit, Set[Card]] = {}
@@ -112,11 +118,11 @@ def evaluate(hand: Hand) -> Iterator[Combo]:
     }
 
     straights: List[Set[Card]] = []
-    values: Set[int] = {card.value for card in full}
+    ranks: Set[int] = {card.rank for card in hand}
 
     # Calculate NoaKs.
-    for v in range(len(VALUES)):
-        sub = {card for card in full if card.value == v}
+    for r in ranks:
+        sub = {card for card in hand if card.rank == r}
         l = len(sub)
 
         if l in oak:
@@ -126,28 +132,28 @@ def evaluate(hand: Hand) -> Iterator[Combo]:
     for number, cards in oak.items():
         targ = Target(OAKS[number])
         for seq in cards:
-            yield Combo(targ, seq, full)
+            yield Combo(targ, seq, hand)
 
     # Check for TwoPairs.
     if len(oak[2]) >= 2:
         a, b = oak[2][-2:]
-        yield Combo(Target.PAIR_TWO, a | b, full)
+        yield Combo(Target.PAIR_TWO, a | b, hand)
 
     # Check for each Straight.
     for seq in STRAIGHTS:
-        if seq <= values:
+        if seq <= ranks:
             # This Straight is a subset of our Hand.
-            straight = {card for card in full if card.value in seq}
+            straight = {card for card in hand if card.rank in seq}
             straights.append(straight)
             yield Combo(
                 Target.STRAIGHT,
-                {[card for card in full if card.value == i][0] for i in seq},
-                full,
+                {[card for card in hand if card.rank == i][0] for i in seq},
+                hand,
             )
 
     # Find Full Houses.
-    over: Set[int] = {list(s)[0].value for s in oak[5] + oak[4] + oak[3]}
-    under: Set[int] = over | {list(s)[0].value for s in oak[2]}
+    over: Set[int] = {list(s)[0].rank for s in oak[5] + oak[4] + oak[3]}
+    under: Set[int] = over | {list(s)[0].rank for s in oak[2]}
     if over and len(under) >= 2:
         # We have at least three of at least one Value, and at least two of at
         #   least two Values. Higher amounts must be considered, because a Hand
@@ -157,27 +163,24 @@ def evaluate(hand: Hand) -> Iterator[Combo]:
         val_pair = max(under - {val_trip})
         yield Combo(
             Target.FULL_HOUSE,
-            {card for card in full if card == val_trip or card == val_pair},
-            full,
+            {card for card in hand if card == val_trip or card == val_pair},
+            hand,
         )
 
     # Calculate Flushes.
     for suit in Suit:
-        sub = {card for card in full if card.suit == suit}
+        sub = {card for card in hand if card.suit == suit}
 
         if len(sub) >= 5:
             flushes[suit] = sub
-            yield Combo(Target.FLUSH, best(sub, 5), full)
-            strflush = None
+            yield Combo(Target.FLUSH, best(sub, 5), hand)
 
-            for straight in straights:
+            for straight in straights[::-1]:
                 isect = straight & sub
                 if len(isect) >= 5:
-                    strflush = isect
-
-            if strflush:
-                yield Combo(Target.STRAIGHT_FLUSH, best(strflush, 5), full)
+                    yield Combo(Target.STRAIGHT_FLUSH, best(isect, 5), hand)
+                    break
 
 
-def evaluate_best(hand: Hand) -> Combo:
+def evaluate_best(hand: Set[Card]) -> Combo:
     return max(evaluate(hand))

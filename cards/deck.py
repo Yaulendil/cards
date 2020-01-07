@@ -46,14 +46,14 @@ class Suit(IntEnum):
 
 
 class Card(Hashable):
-    __slots__ = ("suit", "value")
+    __slots__ = ("rank", "suit")
 
     def __init__(self, suit: Suit, value: int):
+        self.rank: Final[int] = value
         self.suit: Final[Suit] = suit
-        self.value: Final[int] = value
 
     def __hash__(self) -> int:
-        return self.suit * PRIMES[self.value]
+        return self.suit * PRIMES[self.rank]
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Card):
@@ -61,24 +61,24 @@ class Card(Hashable):
         elif isinstance(other, Suit):
             return self.suit == other
         elif isinstance(other, int):
-            return self.value == other
+            return self.rank == other
         else:
             return NotImplemented
 
     def __gt__(self, other: "Card") -> bool:
         if isinstance(other, Card):
-            return self.value > other.value
+            return self.rank > other.rank
         else:
             return NotImplemented
 
     def __lt__(self, other: "Card") -> bool:
         if isinstance(other, Card):
-            return self.value < other.value
+            return self.rank < other.rank
         else:
             return NotImplemented
 
     def __repr__(self) -> str:
-        name: str = VALUES[self.value]
+        name: str = VALUES[self.rank]
 
         if not name.isdigit():
             name = name[0]
@@ -86,7 +86,7 @@ class Card(Hashable):
         return f"{name}{self.suit!s}"
 
     def __str__(self) -> str:
-        return f"{VALUES[self.value]} of {self.suit.name.title()}"
+        return f"{VALUES[self.rank]} of {self.suit.name.title()}"
 
 
 class DeckExhausted(Exception):

@@ -23,10 +23,8 @@ def test(nc: int = 5, nh: int = 2):
     h0.sort(True)
     h1.sort(True)
 
-    c0 = evaluate_best(h0)
-    c1 = evaluate_best(h1)
-    v0 = c0.value()
-    v1 = c1.value()
+    c0 = evaluate_best(h0.full)
+    c1 = evaluate_best(h1.full)
 
     print("Public:", com)
     print(h0)
@@ -35,9 +33,9 @@ def test(nc: int = 5, nh: int = 2):
     print(" ", c1)
     print()
 
-    if v0 == v1:
+    if c0 == c1:
         print("TIED")
-    elif v0 > v1:
+    elif c0 > c1:
         print("Winner:", h0, "with", c0)
     else:
         print("Winner:", h1, "with", c1)
