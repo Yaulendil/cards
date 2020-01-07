@@ -138,7 +138,7 @@ def evaluate(hand: Set[Card]) -> Iterator[Combo]:
 
     # Check for TwoPairs.
     if len(oak[2]) >= 2:
-        a, b = oak[2][-2:]
+        a, b = map(set, sorted(map(tuple, oak[2]))[-2:])
         yield Combo(Target.PAIR_TWO, a | b, hand)
 
     # Check for each Straight.
@@ -157,15 +157,18 @@ def evaluate(hand: Set[Card]) -> Iterator[Combo]:
     over: Set[int] = {list(s)[0].rank for s in oak[5] + oak[4] + oak[3]}
     under: Set[int] = over | {list(s)[0].rank for s in oak[2]}
     if over and len(under) >= 2:
-        # We have at least three of at least one Value, and at least two of at
-        #   least two Values. Higher amounts must be considered, because a Hand
+        # We have at least three of at least one Rank, and at least two of at
+        #   least two Ranks. Higher amounts must be considered, because a Hand
         #   of XXXYYYZ can yield FH XXXYY, but cannot yield 2oaK YY (it would
         #   instead yield 3oaK YYY).
         val_trip = max(over)
         val_pair = max(under - {val_trip})
         yield Combo(
             Target.FULL_HOUSE,
-            {card for card in hand if card == val_trip or card == val_pair},
+            set(
+                [card for card in hand if card == val_trip][:3]
+                + [card for card in hand if card == val_pair][:2]
+            ),
             hand,
         )
 
