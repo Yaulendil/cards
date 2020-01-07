@@ -133,6 +133,7 @@ def evaluate(hand: Hand) -> Iterator[Combo]:
         a, b = oak[2][-2:]
         yield Combo(Target.PAIR_TWO, a | b, full)
 
+    # Check for each Straight.
     for seq in STRAIGHTS:
         if seq <= values:
             # This Straight is a subset of our Hand.
@@ -143,6 +144,22 @@ def evaluate(hand: Hand) -> Iterator[Combo]:
                 {[card for card in full if card.value == i][0] for i in seq},
                 full,
             )
+
+    # Find Full Houses.
+    over: Set[int] = {list(s)[0].value for s in oak[5] + oak[4] + oak[3]}
+    under: Set[int] = over | {list(s)[0].value for s in oak[2]}
+    if over and len(under) >= 2:
+        # We have at least three of at least one Value, and at least two of at
+        #   least two Values. Higher amounts must be considered, because a Hand
+        #   of XXXYYYZ can yield FH XXXYY, but cannot yield 2oaK YY (it would
+        #   instead yield 3oaK YYY).
+        val_trip = max(over)
+        val_pair = max(under - {val_trip})
+        yield Combo(
+            Target.FULL_HOUSE,
+            {card for card in full if card == val_trip or card == val_pair},
+            full,
+        )
 
     # Calculate Flushes.
     for suit in Suit:
