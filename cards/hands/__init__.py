@@ -28,7 +28,7 @@ class Target(IntEnum):
 TARGET_NAMES = (
     "High Card",
     "One Pair",
-    "Two Pairs",
+    "Two Pair",
     "Three of a Kind",
     "Straight",
     "Flush",
@@ -70,9 +70,17 @@ class Combo(object):
         )
 
         self.rank: HandRank = (self.target.value, *self.main, *self.kicker)
-        self.term: str = "Royal Flush" if (
-            self.target is Target.STRAIGHT_FLUSH and max(self.cards) == 12
-        ) else TARGET_NAMES[self.target]
+        high = max(self.cards)
+
+        if high == 12:
+            if self.target == Target.STRAIGHT_FLUSH:
+                self.term: str = "Royal Flush"
+            elif self.target == Target.STRAIGHT:
+                self.term: str = "Broadway Straight"
+            else:
+                self.term: str = TARGET_NAMES[self.target]
+        else:
+            self.term: str = TARGET_NAMES[self.target]
 
     def __eq__(self, other: "Combo") -> bool:
         if isinstance(other, Combo):
