@@ -1,18 +1,18 @@
 from collections import deque
-from enum import IntEnum
+from enum import IntEnum, Enum
 from random import shuffle
 from secrets import randbelow
 from typing import Deque, Final, Hashable, Iterator, Tuple
 
 
-ICONS_SUIT = {
-    2: chr(0x2663),
-    3: chr(0x2666),
-    5: chr(0x2665),
-    7: chr(0x2660),
-}
-PRIMES = (11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59)
-VALUES: Tuple[str, ...] = (
+def rfloat(scale: int = 1000000) -> float:
+    return randbelow(scale) / scale
+
+
+PRIMES = (11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79)
+RANKS: Tuple[str, ...] = (
+    "Joker",
+    "Ace",
     "2",
     "3",
     "4",
@@ -27,12 +27,33 @@ VALUES: Tuple[str, ...] = (
     "King",
     "Ace",
 )
+SUITS = {
+    2: chr(0x2663),
+    3: chr(0x2666),
+    5: chr(0x2665),
+    7: chr(0x2660),
+}
 
-COURT = {9, 10, 11}
 
+class Rank(IntEnum):
+    JOKER = 0
+    ONE = 1
+    TWO = 2
+    THREE = 3
+    FOUR = 4
+    FIVE = 5
+    SIX = 6
+    SEVEN = 7
+    EIGHT = 8
+    NINE = 9
+    TEN = 10
+    JACK = 11
+    QUEEN = 12
+    KING = 13
+    ACE = 14
 
-def rfloat(scale: int = 1000000) -> float:
-    return randbelow(scale) / scale
+    def __str__(self) -> str:
+        return RANKS[self]
 
 
 class Suit(IntEnum):
@@ -42,14 +63,22 @@ class Suit(IntEnum):
     SPADES = 7
 
     def __str__(self) -> str:
-        return ICONS_SUIT[self]
+        return SUITS[self]
+
+
+class Values(Tuple[Rank, ...], Enum):
+    STANDARD = tuple(map(Rank, range(2, 15)))
+    LOWBALL = tuple(map(Rank, range(1, 14)))
+
+    def __str__(self) -> str:
+        return self.name.title()
 
 
 class Card(Hashable):
     __slots__ = ("rank", "suit")
 
-    def __init__(self, suit: Suit, value: int):
-        self.rank: Final[int] = value
+    def __init__(self, rank: Rank, suit: Suit):
+        self.rank: Final[int] = rank
         self.suit: Final[Suit] = suit
 
     def __hash__(self) -> int:
@@ -78,7 +107,7 @@ class Card(Hashable):
             return NotImplemented
 
     def __repr__(self) -> str:
-        name: str = VALUES[self.rank]
+        name: str = RANKS[self.rank]
 
         if not name.isdigit():
             name = name[0]
@@ -86,7 +115,7 @@ class Card(Hashable):
         return f"{name:>2}{self.suit!s}"
 
     def __str__(self) -> str:
-        return f"{VALUES[self.rank]} of {self.suit.name.title()}"
+        return f"{RANKS[self.rank]} of {self.suit.name.title()}"
 
 
 class DeckExhausted(Exception):
@@ -115,10 +144,8 @@ class Deck(object):
         else:
             raise DeckExhausted
 
-    def populate(self) -> None:
-        self.data.extend(
-            Card(suit, value) for suit in Suit for value in range(len(VALUES))
-        )
+    def populate(self, variant: Values = Values.STANDARD) -> None:
+        self.data.extend(Card(rank, suit) for suit in Suit for rank in variant)
 
     def shuffle(self, n: int = 1) -> None:
         for _ in range(n):

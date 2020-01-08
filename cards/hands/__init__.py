@@ -70,17 +70,20 @@ class Combo(object):
         )
 
         self.rank: HandRank = (self.target.value, *self.main, *self.kicker)
-        high = max(self.cards)
+        self.term: str = TARGET_NAMES[self.target]
+        high, low = max(self.cards), min(self.cards)
 
-        if high == 12:
+        if high == 14:
             if self.target == Target.STRAIGHT_FLUSH:
                 self.term: str = "Royal Flush"
             elif self.target == Target.STRAIGHT:
                 self.term: str = "Broadway Straight"
-            else:
-                self.term: str = TARGET_NAMES[self.target]
-        else:
-            self.term: str = TARGET_NAMES[self.target]
+
+        elif high == 5:
+            if self.target == Target.STRAIGHT_FLUSH:
+                self.term: str = "Steel Wheel"
+            elif self.target == Target.STRAIGHT:
+                self.term: str = "Baby Straight"
 
     def __eq__(self, other: "Combo") -> bool:
         if isinstance(other, Combo):
