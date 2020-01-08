@@ -1,7 +1,7 @@
 from enum import IntEnum
-from typing import Dict, List, Set, Tuple, Iterator, FrozenSet
+from typing import Dict, FrozenSet, Iterable, Iterator, List, Set, Tuple
 
-from ..deck import Card, Suit, VALUES
+from ..deck import Card, Suit
 from .base import Hand
 
 __all__ = ("Combo", "evaluate", "evaluate_best", "Hand")
@@ -57,14 +57,12 @@ def best(cards: Set[Card], n: int = 5) -> Set[Card]:
 class Combo(object):
     __slots__ = ("cards", "hand", "kicker", "main", "rank", "target", "term")
 
-    def __init__(self, target: Target, cards: Set[Card], hand: Set[Card]):
+    def __init__(self, target: Target, cards: Iterable[Card], hand: Set[Card]):
         self.cards: FrozenSet[Card] = frozenset(cards)
         self.hand: FrozenSet[Card] = frozenset(hand)
 
         self.target: Target = target
-        self.main: Tuple[Card, ...] = tuple(
-            sorted((c for c in self.cards), reverse=True)
-        )
+        self.main: Tuple[Card, ...] = tuple(cards)
         self.kicker: Tuple[Card, ...] = tuple(
             sorted((c for c in self.hand - self.cards), reverse=True)[
                 : 5 - len(self.main)
@@ -73,7 +71,7 @@ class Combo(object):
 
         self.rank: HandRank = (self.target.value, *self.main, *self.kicker)
         self.term: str = "Royal Flush" if (
-            self.target is Target.STRAIGHT_FLUSH and max(self.cards) == len(VALUES)
+            self.target is Target.STRAIGHT_FLUSH and max(self.cards) == 12
         ) else TARGET_NAMES[self.target]
 
     def __eq__(self, other: "Combo") -> bool:
@@ -108,7 +106,7 @@ def evaluate(hand: Set[Card]) -> Iterator[Combo]:
         return
 
     # Always yield at least a High Card.
-    yield Combo(Target.HIGH, {max(hand)}, hand)
+    yield Combo(Target.HIGH, [max(hand)], hand)
 
     # OAK: Of A Kind: Subsets of the Hand which all have the same Rank, keyed by
     #   Number of a Kind.
@@ -134,12 +132,12 @@ def evaluate(hand: Set[Card]) -> Iterator[Combo]:
     for number, cards in oak.items():
         targ = Target(OAKS[number])
         for seq in cards:
-            yield Combo(targ, seq, hand)
+            yield Combo(targ, sorted(seq), hand)
 
     # Check for TwoPairs.
     if len(oak[2]) >= 2:
         a, b = map(set, sorted(map(tuple, oak[2]))[-2:])
-        yield Combo(Target.PAIR_TWO, a | b, hand)
+        yield Combo(Target.PAIR_TWO, sorted(a | b, reverse=True), hand)
 
     # Check for each Straight.
     for seq in STRAIGHTS:
@@ -149,7 +147,10 @@ def evaluate(hand: Set[Card]) -> Iterator[Combo]:
             straights.append(straight)
             yield Combo(
                 Target.STRAIGHT,
-                {[card for card in hand if card.rank == i][0] for i in seq},
+                sorted(
+                    ([card for card in hand if card.rank == i][0] for i in seq),
+                    reverse=True,
+                ),
                 hand,
             )
 
@@ -165,24 +166,27 @@ def evaluate(hand: Set[Card]) -> Iterator[Combo]:
         val_pair = max(under - {val_trip})
         yield Combo(
             Target.FULL_HOUSE,
-            set(
-                [card for card in hand if card == val_trip][:3]
-                + [card for card in hand if card == val_pair][:2]
-            ),
+            [card for card in hand if card == val_trip][:3]
+            + [card for card in hand if card == val_pair][:2],
             hand,
         )
 
     # Calculate Flushes.
     for suit in Suit:
-        sub = {card for card in hand if card.suit == suit}
+        flush = {card for card in hand if card.suit == suit}
 
-        if len(sub) >= 5:
-            yield Combo(Target.FLUSH, best(sub, 5), hand)
+        if len(flush) >= 5:
+            yield Combo(Target.FLUSH, sorted(best(flush, 5), reverse=True), hand)
 
             for straight in straights[::-1]:
-                isect = straight & sub
-                if len(isect) >= 5:
-                    yield Combo(Target.STRAIGHT_FLUSH, best(isect, 5), hand)
+                # If any Straight set is a subset of a Flush set, it is a
+                #   Straight Flush.
+                if straight <= flush:
+                    yield Combo(
+                        Target.STRAIGHT_FLUSH,
+                        sorted(best(straight, 5), reverse=True),
+                        hand,
+                    )
                     break
 
 
