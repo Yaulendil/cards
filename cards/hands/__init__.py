@@ -73,17 +73,20 @@ class Combo(object):
         self.term: str = TARGET_NAMES[self.target]
         high, low = max(self.cards), min(self.cards)
 
-        if high == 14:
+        if self.target == Target.HIGH:
+            self.term = "{!s} High".format(high.rank)
+
+        elif high == 14:
             if self.target == Target.STRAIGHT_FLUSH:
-                self.term: str = "Royal Flush"
+                self.term = "Royal Flush"
             elif self.target == Target.STRAIGHT:
-                self.term: str = "Broadway Straight"
+                self.term = "Broadway Straight"
 
         elif high == 5:
             if self.target == Target.STRAIGHT_FLUSH:
-                self.term: str = "Steel Wheel"
+                self.term = "Steel Wheel"
             elif self.target == Target.STRAIGHT:
-                self.term: str = "Baby Straight"
+                self.term = "Baby Straight"
 
     def __eq__(self, other: "Combo") -> bool:
         if isinstance(other, Combo):

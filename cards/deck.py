@@ -52,6 +52,10 @@ class Rank(IntEnum):
     KING = 13
     ACE = 14
 
+    @classmethod
+    def range(cls, first: int, last: int) -> Tuple["Rank"]:
+        return tuple(map(cls, range(first, last + 1)))
+
     def __str__(self) -> str:
         return RANKS[self]
 
@@ -67,8 +71,8 @@ class Suit(IntEnum):
 
 
 class Values(Tuple[Rank, ...], Enum):
-    STANDARD = tuple(map(Rank, range(2, 15)))
-    LOWBALL = tuple(map(Rank, range(1, 14)))
+    STANDARD = Rank.range(2, 14)
+    LOWBALL = Rank.range(1, 13)
 
     def __str__(self) -> str:
         return self.name.title()
